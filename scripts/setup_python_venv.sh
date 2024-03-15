@@ -1,6 +1,7 @@
 #!/bin/bash
 
 cd "$(dirname "$0")"
+cd ..
 cd $1
 
 # Define your virtual environment directory name
