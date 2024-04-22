@@ -2,8 +2,9 @@ import datetime
 import logging
 import os
 
+import extract_msg
 import requests
-import textract
+from unstructured.partition.auto import partition
 
 
 class SharePointHandler:
@@ -41,11 +42,18 @@ class SharePointHandler:
         self.processed_drives_file = processed_drives_file
         self.error_items_file = error_items_file
 
-        # self.white_list_file_extensions = ['.csv', '.doc', '.docx', '.eml', '.epub', '.gif', '.jpg', '.json', '.html',
-        #                                    '.mp3', '.msg', '.odt', '.ogg', '.pdf', '.png', '.pptx', '.ps', '.rtf',
-        #                                    '.tiff', '.txt', '.wav', '.xlsx', '.xls']
-        self.white_list_file_extensions = ['.csv', '.doc', '.docx', '.eml', '.epub', '.json', '.html', '.msg', '.odt',
-                                           '.ogg', '.pdf', '.pptx', '.ps', '.rtf', '.tiff', '.txt', '.xlsx', '.xls']
+        # self.white_list_file_extensions = [
+        #     '.csv', '.eml', '.msg', '.epub', '.xlsx', '.xls', '.html', '.htm', '.png', '.jpg', '.jpeg', '.tiff', '.bmp',
+        #     '.heic','.md', '.org', '.odt', '.pdf', '.txt', '.text', '.log', '.ppt', '.pptx', '.rst', '.rtf', '.tsv', '.doc',
+        #     '.docx','.xml', '.js', '.py', '.java', '.cpp', '.cc', '.cxx', '.c', '.cs', '.php', '.rb', '.swift', '.ts', '.go'
+        # ]
+        # We are excluding formats that are not related to text: ['png', 'jpg', 'jpeg', 'tiff', 'bmp', 'heic']
+        self.white_list_file_extensions = [
+            '.csv', '.eml', '.msg', '.epub', '.xlsx', '.xls', '.html', '.htm',
+            '.md', '.org', '.odt', '.pdf', '.txt', '.text', '.log', '.ppt', '.pptx',
+            '.rst', '.rtf', '.tsv', '.doc', '.docx', '.xml', '.js', '.py', '.java',
+            '.cpp', '.cc', '.cxx', '.c', '.cs', '.php', '.rb', '.swift', '.ts', '.go'
+        ]
 
     def get_api_call_count(self):
         return self.api_call_count
@@ -261,10 +269,11 @@ class SharePointHandler:
             raise Exception(f"Failed to list drives: {response.status_code} {response.text}")
 
     def get_items_in_item_recursive(self,
+                                    site_name: str,
                                     site_id: str,
+                                    drive_name: str,
                                     drive_id: str,
                                     item_id: str,
-                                    drive_name: str,
                                     path: str = "/",
                                     items_list: list = None,
                                     max_items: int = -1):
@@ -278,7 +287,9 @@ class SharePointHandler:
         without making any actual API calls or modifying data.
 
         :param site_id: ID of the SharePoint site.
+        :param site_name: Name of the SharePoint site.
         :param drive_id: ID of the drive from which items are retrieved.
+        :param drive_id: Name of the drive from which items are retrieved.
         :param item_id: ID of the item to start the retrieval from. If None, starts from the drive root.
         :param drive_name: Name of the drive, used for item identification.
         :param path: Current path of navigation, used for constructing item paths. Defaults to root ("/").
@@ -357,17 +368,34 @@ class SharePointHandler:
                 response_data = response.json()
                 items_data = response.json()['value']
                 for item in items_data:
-                    item_details = self._extract_item_details(item, site_id, drive_id, drive_name, path)
+                    item_details = self._extract_item_details(item, items_data, site_id, drive_name, drive_id, path)
                     items_list.append(item_details)
                     if item_details['is_folder']:
                         items_list.append(item_details)
-                        self.get_items_in_item_recursive(site_id, drive_id, item['id'], drive_name,
+                        self.get_items_in_item_recursive(site_name, site_id, drive_name, drive_id, item['id'],
                                                          item_details['path'], items_list, max_items)
                 url = response_data.get('@odata.nextLink', None)
             else:
                 raise Exception(f"Failed to list items for {item_id} item: {response.status_code} {response.text}")
 
         return items_list
+
+    def _extract_msg_details(self, file_path):
+        """
+        Extracts the subject and body from a .msg file.
+
+        Args:
+        file_path (str): The path to the .msg file.
+
+        Returns:
+        tuple: A tuple containing the subject and body of the message.
+        """
+        # Open the .msg file
+        with extract_msg.Message(file_path) as msg:
+            subject = msg.subject  # Get the subject of the email
+            body = msg.body  # Get the body of the email
+
+        return subject, body
 
     def get_item_content(self,
                          site_id: str,
@@ -415,9 +443,13 @@ class SharePointHandler:
 
                 # Process the document to extract text
                 try:
-                    text = textract.process(item_name)
-                    logging.debug(f"{text.decode('utf-8')}")
-                    return text.decode('utf-8')
+                    if item_name.endswith('.msg'):
+                        subject, body = self._extract_msg_details(item_name)
+                        return f"subject: {subject} | body: {body}"
+                    elements = partition(filename=item_name)
+                    text = "\n\n".join(str(element) for element in elements)
+                    logging.debug(f"{text}")
+                    return text
                 except Exception as e:
                     item_error_details = {
                         "site_id": site_id,
@@ -462,12 +494,28 @@ class SharePointHandler:
                     self.mark_item_as_error(self.error_items_file, str(item_error_details))
         return None
 
-    @staticmethod
-    def _extract_item_details(item: dict, site_id: str, drive_id: str, drive_name: str, path: str):
+    def _build_sharepoint_download_link(self, item_id: str, site_name: str, sharepoint_name: str):
+
+        # Template for SharePoint download URL
+        template_url = "https://{sharepoint_name}/sites/{site_name}/_layouts/15/download.aspx?UniqueId={item_id}"
+
+        # Construct the download URL
+        download_url = template_url.format(
+            sharepoint_name=sharepoint_name,
+            site_name=site_name,
+            item_id=item_id
+        )
+
+        return download_url
+
+    def _extract_item_details(self, item: dict, site_name: str, site_id: str, drive_id: str, drive_name: str,
+                              path: str,
+                              sharepoint_name: str = 'esynergysol.sharepoint.com'):
         """
         Extracts and organizes details from a SharePoint item for internal use.
 
         :param item: The SharePoint item from which details are extracted.
+        :param site_name: Name of the SharePoint site.
         :param site_id: ID of the SharePoint site.
         :param drive_id: ID of the drive containing the item.
         :param drive_name: Name of the drive.
@@ -479,10 +527,13 @@ class SharePointHandler:
         item_details = {
             'id': item['id'],
             'name': item['name'],
+            'site_name': site_name,
             'site_id': site_id,
             'drive_id': drive_id,
             'drive_name': drive_name,
             'path': item_path,
+            'link': self._build_sharepoint_download_link(site_name=site_name, item_id=item['id'],
+                                                         sharepoint_name=sharepoint_name),
             'lastModifiedDateTime': item.get('lastModifiedDateTime'),
             'is_folder': is_folder
         }

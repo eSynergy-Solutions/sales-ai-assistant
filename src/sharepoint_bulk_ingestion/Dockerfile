@@ -27,6 +27,8 @@ RUN apt-get update && apt-get install -y \
     swig \
     libpulse-dev \
     curl \
+    libreoffice \
+    pandoc \
  && rm -rf /var/lib/apt/lists/* \
  && curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11 \
  && ln -sf /usr/bin/python3.11 /usr/bin/python3 \

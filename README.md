@@ -20,22 +20,27 @@ Overall, the doc knowledge AI assistant application aims to tap into collective 
 Below is the project structure for **doc-knowledge-ai-assistant**, providing an overview of the main components and their purpose:
 
 ```
-├── assets/                  # Media assets such as logos
-├── docs/                    # Documentation for the project
-├── scripts/                 # Maintenance and setup scripts
-├── src/                     # Contains all source code
-│   ├── sharepoint_bulk_ingestion/ # Module for SharePoint data ingestion
-│   │   ├── __init__.py      # Package initialization
-│   │   ├── ...              # Additional module files
-│   │   └── requirements.txt # Dependencies for sharepoint_bulk_ingestion module
-├── terraform/               # Terraform configurations
-│   ├── terraform_infra/     # Infrastructure as code for setting up the environment
-│   └── terraform_deployment/ # Terraform scripts for deployment procedures
-├── tests/                   # Automated tests
-├── .gitignore               # Specifies intentionally untracked files to ignore
-├── LICENSE                  # The license under which the project is made available
-├── README.md                # Project overview, setup instructions, and guidelines
-└── setup.sh                 # Script to set up the project's environment (venv setup)
+├── assets/                           # Media assets such as logos
+├── docs/                             # Documentation for the project
+├── scripts/                          # Maintenance and setup scripts
+├── src/                              # Contains all source code
+│   ├── sharepoint_bulk_ingestion/    # Module for SharePoint data ingestion into Astra DB
+│   │   ├── __init__.py               # Package initializer
+│   │   ├── sharepoint_integration.py # Main script for SharePoint document ingestion
+│   │   ├── requirements.txt          # Python package dependencies for this module
+│   │   └── Dockerfile                # Dockerfile for building this module's container
+│   ├── streamlit/                    # Streamlit app for displaying data insights
+│   │   ├── Dockerfile                # Dockerfile for Streamlit app
+│   │   ├── salesChat.py              # Main script for the Streamlit application
+│   │   └── requirements.txt          # Python package dependencies for the Streamlit module
+├── terraform/                        # Terraform configurations
+│   ├── terraform_infra/              # Infrastructure as code for setting up the environment
+│   └── terraform_deployment/         # Terraform scripts for deployment procedures
+├── tests/                            # Automated tests
+├── .gitignore                        # Specifies intentionally untracked files to ignore
+├── LICENSE                           # The license under which the project is made available
+├── README.md                         # Project overview, setup instructions, and guidelines
+└── setup.sh                          # Script to set up the project's environment (venv setup)
 ```
 
 
@@ -168,3 +173,120 @@ The following are the further information about the tech stack used for the appl
 - Handles client requests and proxies to API
 - Configured for security, logging, traffic shaping
 - Deployed on AWS EC2 instance
+
+## Build
+
+### Build Docker images
+```bash
+# Mac OS (Silicon CPU)
+docker buildx build --platform linux/amd64 -t genaisandboxacr.azurecr.io/sharepoint_bulk_ingestion:v1-latest src/sharepoint_bulk_ingestion --load
+docker buildx build --platform linux/amd64 --build-arg PIP_USER="<username>" --build-arg PIP_PASS="<password>" --build-arg PIP_URL="<IP>" --build-arg PIP_PORT="<PORT>" -t genaisandboxacr.azurecr.io/sales-ai-assistant-streamlit:v1-latest src/streamlit --load
+
+# x86 Arch
+docker build -t genaisandboxacr.azurecr.io/sharepoint_bulk_ingestion:v1-latest src/sharepoint_bulk_ingestion
+docker build --build-arg PIP_USER="<username>" --build-arg PIP_PASS="<password>" --build-arg PIP_URL="<IP>" --build-arg PIP_PORT="<PORT>" -t genaisandboxacr.azurecr.io/sales-ai-assistant-streamlit:v1-latest src/streamlit
+```
+
+## Deployment
+
+### Infrastructure
+```bash
+cd terraform
+
+# Create .env file with the following secrets:
+# ARM_CLIENT_ID=
+# ARM_CLIENT_SECRET=
+# ARM_SUBSCRIPTION_ID=
+# ARM_TENANT_ID=
+# ARM_ACCESS_KEY=
+# AZURE_CLIENT_ID=
+# AZURE_TENANT_ID=
+# AZURE_CLIENT_SECRET=
+
+source .env
+
+cd terraform_infra
+terraform init
+terraform plan
+terraform apply
+```
+
+### Push Docker Images
+```bash
+az login --service-principal -u <ARM_CLIENT_ID> -p <ARM_CLIENT_SECRET> --tenant <ARM_TENANT_ID>
+az acr login --name genaisandboxacr
+
+docker push genaisandboxacr.azurecr.io/sharepoint_bulk_ingestion:v1-latest
+docker push genaisandboxacr.azurecr.io/sales-ai-assistant-streamlit:v1-latest
+```
+
+### Deploy Sharepoint Bulk Ingestion
+```bash
+cd terraform
+
+# Create .env file with the following secrets:
+# ARM_CLIENT_ID=
+# ARM_CLIENT_SECRET=
+# ARM_SUBSCRIPTION_ID=
+# ARM_TENANT_ID=
+# ARM_ACCESS_KEY=
+# AZURE_CLIENT_ID=
+# AZURE_TENANT_ID=
+# AZURE_CLIENT_SECRET=
+
+source .env
+
+cd terraform_deployment
+terraform init
+terraform plan
+terraform apply
+```
+
+### Deploy Sharepoint Bulk Ingestion
+```bash
+cd terraform
+
+# Create .env file with the following secrets:
+# ARM_CLIENT_ID=
+# ARM_CLIENT_SECRET=
+# ARM_SUBSCRIPTION_ID=
+# ARM_TENANT_ID=
+# ARM_ACCESS_KEY=
+# AZURE_CLIENT_ID=
+# AZURE_TENANT_ID=
+# AZURE_CLIENT_SECRET=
+
+source .env
+
+cd terraform_deployment
+terraform init
+terraform plan
+terraform apply
+```
+
+### Run Streamlit
+The automation of the Streamlit deployment is to be completed. We have deployed it manually using Azure Container Apps. These steps can also be used for local deployment.
+```bash
+# Create .env file with the following secrets:
+#MODEL_TYPE=bedrock
+#LLM_MODEL=anthropic.claude-v2
+#EMBEDDING_MODEL=amazon.titan-embed-text-v1
+#STREAMLIT_URL=http://13.42.201.171:8001/get-response
+#STREAMLIT_KEY=Basic <key>
+#STREAMLIT_FEEDBACK_EMAIL=<feedback-email>
+#STREAMLIT_FEEDBACK_PASSWORD=<feedback-password>
+#STREAMLIT_PASSWORD=<steramlit-password>
+#RETREIVER_NAME=astradb
+#AWS_ACCESS_KEY_ID=<aws-access-key-id>
+#AWS_SECRET_ACCESS_KEY=<aws-secret-access-key>
+#ASTRA_DB_API_ENDPOINT=<astra-endpoint>
+#ASTRA_DB_APPLICATION_TOKEN=<astra-token>
+#ASTRA_DB_KEYSPACE=sandbox
+#ASTRA_DB_COLLECTION=sandbox_sharepoint_docs
+
+source .env
+
+sh scripts/setup_python_venv.sh src/Streamlit
+pip install --index-url http://${PIP_USER}:${PIP_PASS}@${PIP_URL}:${PIP_PORT} --trusted-host ${PIP_URL} esynergy-open-rag==0.1.3
+streamlit run salesChat.py
+```

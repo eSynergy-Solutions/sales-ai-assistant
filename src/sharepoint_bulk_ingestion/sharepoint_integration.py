@@ -5,11 +5,12 @@ import os
 from typing import Optional, Dict
 
 import boto3
-from astra_db_handler import AstraDBHandler
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
-from blob_storage_handler import BlobStorageHandler
 from langchain_community.embeddings import BedrockEmbeddings
+
+from astra_db_handler import AstraDBHandler
+from blob_storage_handler import BlobStorageHandler
 from share_point_handler import SharePointHandler
 
 drive_white_list = ["SBX - Bid Respository"]
@@ -107,7 +108,7 @@ def process_all_sharepoint_files_by_site_name(sharepoint_handler: SharePointHand
             continue
 
         # For each drive, get items recursively
-        items = sharepoint_handler.get_items_in_item_recursive(site_id, drive['id'], None, drive['name'],
+        items = sharepoint_handler.get_items_in_item_recursive(site_name, site_id, drive['name'], drive['id'], None,
                                                                max_items=max_items)
 
         logging.info(f"Total API calls made so far: {sharepoint_handler.get_api_call_count()}")
@@ -128,12 +129,23 @@ def process_all_sharepoint_files_by_site_name(sharepoint_handler: SharePointHand
 
             # Split content into chunks and process each chunk
             if content:
+                download_link = ''
+                web_link = ''
+                for link_details in item['site_name']:
+                    if link_details['id'] == item['id']:
+                        download_link = link_details['@microsoft.graph.downloadUrl']
+                        web_link = link_details['webUrl']
+
+
                 metadata = {
                     "id": item['id'],
                     "name": item['name'],
                     "site_id": site_id,
+                    "download_link": download_link,
+                    "web_link": web_link,
                     "path": item['path'],
                     "drive_name": item['drive_name'],
+                    "privacy_level": "SENSITIVE"
                 }
                 chunks = astra_db_text_handler.recursive_character_doc_splitter(content, metadata)
 
@@ -160,7 +172,7 @@ def process_all_sharepoint_files_by_site_name(sharepoint_handler: SharePointHand
                 sharepoint_handler.mark_item_as_processed(sharepoint_handler.get_processed_items_file(), item['id'])
 
         sharepoint_handler.mark_item_as_processed(sharepoint_handler.get_processed_drives_file(), drive['id'])
-        sharepoint_handler.clear_processed_items_record(sharepoint_handler.get_processed_items_file())
+        # sharepoint_handler.clear_processed_items_record(sharepoint_handler.get_processed_items_file())
 
     logging.info(f"{inserted_item_count} items inserted and {inserted_db_document_count} documents have been "
                  f"inserted in the vector DB")
@@ -194,7 +206,7 @@ def get_secrets_from_key_vault(secret_client: SecretClient, secrets: list) -> Di
 
 def initialize_handlers(secure: bool, collection_name: str, dry_run: bool,
                         key_vault_secrets: Optional[Dict[str, str]] = None) -> (
-        Optional[SharePointHandler], Optional[AstraDBHandler]):
+        Optional[SharePointHandler], Optional[AstraDBHandler], Optional[BlobStorageHandler]):
     blob_storage_handler = None
     if secure:
         # Assuming key_vault_secrets is not None if secure is True
@@ -207,7 +219,7 @@ def initialize_handlers(secure: bool, collection_name: str, dry_run: bool,
         embeddings = BedrockEmbeddings(client=bedrock,
                                        model_id='amazon.titan-embed-text-v1')
 
-        logging.info(f"Setting up sharepoint_handler and astra_db_text_handler")
+        logging.info(f"Setting up sharepoint_handler, astra_db_text_handler and blob_storage_handler")
         sharepoint_handler = SharePointHandler(
             tenant_id=key_vault_secrets['sharepoint-tenant-id'],
             client_id=key_vault_secrets['sharepoint-client-id'],

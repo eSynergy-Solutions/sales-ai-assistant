@@ -6,6 +6,7 @@
 Hubspot.txt
 *.venv*
 **/venv
+**/.streamlit
 
 # Terraform .gitignore
 
