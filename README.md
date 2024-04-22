@@ -242,28 +242,6 @@ terraform plan
 terraform apply
 ```
 
-### Deploy Sharepoint Bulk Ingestion
-```bash
-cd terraform
-
-# Create .env file with the following secrets:
-# ARM_CLIENT_ID=
-# ARM_CLIENT_SECRET=
-# ARM_SUBSCRIPTION_ID=
-# ARM_TENANT_ID=
-# ARM_ACCESS_KEY=
-# AZURE_CLIENT_ID=
-# AZURE_TENANT_ID=
-# AZURE_CLIENT_SECRET=
-
-source .env
-
-cd terraform_deployment
-terraform init
-terraform plan
-terraform apply
-```
-
 ### Run Streamlit
 The automation of the Streamlit deployment is to be completed. We have deployed it manually using Azure Container Apps. These steps can also be used for local deployment.
 ```bash
