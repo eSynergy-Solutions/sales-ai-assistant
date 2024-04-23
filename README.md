@@ -261,10 +261,13 @@ The automation of the Streamlit deployment is to be completed. We have deployed 
 #ASTRA_DB_APPLICATION_TOKEN=<astra-token>
 #ASTRA_DB_KEYSPACE=sandbox
 #ASTRA_DB_COLLECTION=sandbox_sharepoint_docs
+#PIP_GIT_USER=
+#PIP_GIT_TOKEN=
+#PIP_GIT_BRANCH=main
 
 source .env
 
 sh scripts/setup_python_venv.sh src/Streamlit
-pip install --index-url http://${PIP_USER}:${PIP_PASS}@${PIP_URL}:${PIP_PORT} --trusted-host ${PIP_URL} esynergy-open-rag==0.1.3
+pip install git+https://${PIP_GIT_USER}:${PIP_GIT_TOKEN}@github.com/eSynergy-Solutions/OpenRag.git@${PIP_GIT_BRANCH}
 streamlit run salesChat.py
 ```

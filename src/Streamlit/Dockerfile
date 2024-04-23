@@ -3,14 +3,13 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-ARG PIP_USER
-ARG PIP_PASS
-ARG PIP_URL
-ARG PIP_PORT
+ARG PIP_GIT_USER
+ARG PIP_GIT_TOKEN
+ARG PIP_GIT_BRANCH
 
-ENV PIP_FULL_URL=http://${PIP_USER}:${PIP_PASS}@${PIP_URL}:${PIP_PORT}
+ENV PIP_FULL_URL=git+https://${PIP_GIT_USER}:${PIP_GIT_TOKEN}@github.com/eSynergy-Solutions/OpenRag.git@${PIP_GIT_BRANCH}
 
-RUN pip install --index-url ${PIP_FULL_URL} --trusted-host ${PIP_URL} esynergy-open-rag==0.1.2
+RUN pip install ${PIP_FULL_URL}
 
 COPY *.py /app
 COPY requirements.txt /app
