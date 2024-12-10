@@ -67,7 +67,7 @@ The Sales AI assistant application is built using a Retrieve-Augment Chatbot arc
 3. File chunks are vectorized into embeddings using AWS Bedrock Titan model
 4. Embedded chunks are indexed in AstraDB as the vector database 
 5. User query is taken as input in the Streamlit frontend 
-6. Query is augmented using EsyNergy customized techniques
+6. Query is augmented using esynergy customized techniques
 7. Relevant document chunks retrieved from vector database using optimized MMR
 8. AWS Bedrock Claude2 model generates a response for the query from chunks  
 9. Response is returned to the user via the API and displayed in Streamlit
