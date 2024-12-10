@@ -1,7 +1,7 @@
 
 <documents>
 <p align="center">
-    <img src="./assets/logo.png" width = 30% >
+    <img src="./assets/New-Logo" width = 30% >
 </p>
 
 #
