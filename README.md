@@ -1,7 +1,7 @@
 
 <documents>
 <p align="center">
-    <img src="./assets/New-Logo" width = 30% >
+    <img src="./assets/New-Logo.webp" width = 30% >
 </p>
 
 #
