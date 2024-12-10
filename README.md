@@ -6,7 +6,7 @@
 
 #
 
-The doc knowledge AI assistant application is an AI-powered conversational tool designed to enhance customer engagement and increase sales efficiency. It utilizes a cutting-edge retrieve-augment chatbot architecture to provide sales representatives with quick access to historical customer data and generate informed responses during live chats.
+The Sales AI assistant application is an AI-powered conversational tool designed to enhance customer engagement and increase sales efficiency. It utilizes a cutting-edge retrieve-augment chatbot architecture to provide sales representatives with quick access to historical customer data and generate informed responses during live chats.
 
 The application interfaces with an organization's SharePoint instance to ingest customer data including profiles, previous communications, and case study records. This raw data is then preprocessed and embedded into dense vector representations optimized for semantic search. At runtime, user queries are augmented and used to retrieve the most relevant data to contextually guide response generation powered by large language models. 
 
@@ -17,7 +17,7 @@ Overall, the doc knowledge AI assistant application aims to tap into collective 
 
 ## Project Structure
 
-Below is the project structure for **doc-knowledge-ai-assistant**, providing an overview of the main components and their purpose:
+Below is the project structure for **Sales AI Assistant**, providing an overview of the main components and their purpose:
 
 ```
 ├── assets/                           # Media assets such as logos
@@ -49,7 +49,7 @@ Below is the project structure for **doc-knowledge-ai-assistant**, providing an 
 
 <img src="./docs/Version Current/doc-knowledge-ai-assistant-v1-svg-100.svg"> 
 
-The doc knowledge AI assistant application is built using a Retrieve-Augment Chatbot architecture with the following main components:
+The Sales AI assistant application is built using a Retrieve-Augment Chatbot architecture with the following main components:
 
 - esynergy documents hosted in Microsoft SharePoint
 - Data preprocessing using Langchain Framework and Azure SaaS Services
@@ -129,13 +129,13 @@ AWS Bedrock provides managed access to state-of-the-art models for text generati
 
 ## Use Cases
 
-- **Retrieving Case Studies** - Sales reps can rapidly pull up relevant case studies, projects, and customer success stories by querying the system during a chat. This provides supporting proof for product capabilities.
+- **Retrieving Case Studies** - Sales and account managers can rapidly pull up relevant case studies, projects, and customer success stories by querying the system during a chat. This provides supporting proof for product capabilities.
 
-- **Getting Project Details** - When chatting with a customer about an ongoing or past project, reps can obtain specifics like timelines, milestones, and deliverables quickly without having to search across multiple systems.
+- **Getting Project Details** - When chatting with a customer about an ongoing or past project, sales can obtain specifics like timelines, milestones, and deliverables quickly without having to search across multiple systems.
 
 - **Generating New Case Studies** - The system can auto-generate draft case studies using an existing case study as a template, replacing names, stats, and other details as provided by the sales rep. 
 
-- **Improving Case Studies** - Reps can ask the system for suggestions on improving a case study, such as adding more metrics, focusing on certain details, or clarifying the challenges faced.
+- **Improving Case Studies** - User can ask the system for suggestions on improving a case study, such as adding more metrics, focusing on certain details, or clarifying the challenges faced.
 
 - **Drafting Communications** - The application can draft emails, chat messages, social media posts, etc. tailored for a customer based on past interactions and knowledge.
 
